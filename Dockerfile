@@ -8,7 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     nodejs \
-    npm && \
+    npm \
+    curl && \
     apt-get clean
 
 # Defina o diretório de trabalho
