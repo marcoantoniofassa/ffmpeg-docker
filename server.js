@@ -1,42 +1,64 @@
-const express = require("express");
-const fs = require("fs");
-const { exec } = require("child_process");
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const { exec } = require('child_process');
 
-const app = express(); // Certifique-se de que o Express está inicializado aqui
+app.use(bodyParser.json());
 
-// Middleware para JSON
-app.use(express.json());
+app.post('/process', async (req, res) => {
+    try {
+        const { inputVideo } = req.body;
 
-// Rota para processar vídeos
-app.post("/process", (req, res) => {
-    const { inputVideo } = req.body;
-
-    if (!inputVideo) {
-        return res.status(400).send("URL do vídeo é obrigatória.");
-    }
-
-    console.log("Processando vídeo:", inputVideo);
-
-    const outputFile = "/tmp/output.srt";
-    const command = `ffmpeg -i "${inputVideo}" -map 0:s:0 ${outputFile}`;
-
-    exec(command, (err, stdout, stderr) => {
-        if (err) {
-            console.error("Erro ao processar FFmpeg:", stderr);
-            return res.status(500).send(`Erro no processamento: ${stderr}`);
+        if (!inputVideo) {
+            return res.status(400).send("URL do vídeo é obrigatória.");
         }
 
-        // Retorna o conteúdo da legenda extraída
-        fs.readFile(outputFile, "utf8", (err, data) => {
+        console.log(`Processando vídeo: ${inputVideo}`);
+
+        // Diretórios e arquivos temporários
+        const videoPath = '/tmp/input.mp4';
+        const subtitlePath = '/tmp/output.srt';
+
+        // Baixa o vídeo (simulação com comando curl)
+        exec(`curl -o ${videoPath} "${inputVideo}"`, (err) => {
             if (err) {
-                console.error("Erro ao ler o arquivo:", err);
-                return res.status(500).send("Erro ao ler o arquivo de legendas.");
+                console.error('Erro ao baixar vídeo:', err);
+                return res.status(500).send("Erro ao baixar o vídeo.");
             }
-            res.send({ message: "Legenda extraída com sucesso!", subtitles: data });
+
+            // Processa o vídeo com FFmpeg
+            exec(`ffmpeg -i ${videoPath} -map 0:s:0 ${subtitlePath}`, (err) => {
+                if (err) {
+                    console.error('Erro ao processar FFmpeg:', err);
+                    return res.status(500).send("Erro ao processar o vídeo.");
+                }
+
+                // Lê o arquivo de legendas e envia como resposta
+                fs.readFile(subtitlePath, 'utf8', (err, data) => {
+                    if (err) {
+                        console.error('Erro ao ler o arquivo de legendas:', err);
+                        return res.status(500).send("Erro ao ler as legendas.");
+                    }
+
+                    // Limpa os arquivos temporários
+                    fs.unlink(videoPath, () => console.log('Arquivo de vídeo removido.'));
+                    fs.unlink(subtitlePath, () => console.log('Arquivo de legendas removido.'));
+
+                    res.json({
+                        message: 'Legenda extraída com sucesso!',
+                        subtitles: data
+                    });
+                });
+            });
         });
-    });
+    } catch (error) {
+        console.error('Erro no servidor:', error);
+        res.status(500).send("Erro interno do servidor.");
+    }
 });
 
-// Inicia o servidor na porta configurada
-const PORT = process.env.PORT || 3000;
+// Inicia o servidor
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
