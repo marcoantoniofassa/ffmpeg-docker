@@ -5,7 +5,7 @@ const app = express();
 
 // Aumenta o limite do corpo para 200 MB
 app.use(bodyParser.json({ limit: "200mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "200mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "2000mb" }));
 
 app.post("/process", (req, res) => {
     const { inputVideo } = req.body;
