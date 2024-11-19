@@ -1,5 +1,13 @@
+const express = require("express");
 const fs = require("fs");
+const { exec } = require("child_process");
 
+const app = express(); // Certifique-se de que o Express está inicializado aqui
+
+// Middleware para JSON
+app.use(express.json());
+
+// Rota para processar vídeos
 app.post("/process", (req, res) => {
     const { inputVideo } = req.body;
 
@@ -18,7 +26,7 @@ app.post("/process", (req, res) => {
             return res.status(500).send(`Erro no processamento: ${stderr}`);
         }
 
-        // Lê o arquivo de legendas e retorna como resposta
+        // Retorna o conteúdo da legenda extraída
         fs.readFile(outputFile, "utf8", (err, data) => {
             if (err) {
                 console.error("Erro ao ler o arquivo:", err);
@@ -28,3 +36,7 @@ app.post("/process", (req, res) => {
         });
     });
 });
+
+// Inicia o servidor na porta configurada
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
