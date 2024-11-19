@@ -1,36 +1,23 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 const app = express();
 
-app.use(express.json());
+// Aumenta o limite do corpo para 200 MB
+app.use(bodyParser.json({ limit: "200mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "200mb" }));
 
-const downloadVideo = (url, outputPath) => {
-    return new Promise((resolve, reject) => {
-        const command = `curl -L "${url}" -o ${outputPath}`;
-        exec(command, (err, stdout, stderr) => {
-            if (err) return reject(stderr);
-            resolve(stdout);
-        });
-    });
-};
-
-app.post("/process", async (req, res) => {
+app.post("/process", (req, res) => {
     const { inputVideo } = req.body;
-    const outputPath = "/tmp/input.mp4";
 
-    try {
-        // Baixar o vídeo primeiro
-        await downloadVideo(inputVideo, outputPath);
-
-        // Processar o vídeo com FFmpeg
-        const command = `ffmpeg -i ${outputPath} -map 0:s:0 /tmp/output.srt`;
-        exec(command, (err, stdout, stderr) => {
-            if (err) return res.status(500).send(stderr);
+    // Simula um processamento apenas como exemplo
+    exec(`ffmpeg -i ${inputVideo} -map 0:s:0 output.srt`, (err, stdout, stderr) => {
+        if (err) {
+            res.status(500).send(`Erro: ${stderr}`);
+        } else {
             res.send("Legenda extraída com sucesso!");
-        });
-    } catch (error) {
-        res.status(500).send(error);
-    }
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
