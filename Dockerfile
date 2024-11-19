@@ -1,13 +1,10 @@
-# Use uma imagem base do Ubuntu
-FROM ubuntu:20.04
+# Adicione o Node.js para rodar o servidor
+RUN apt-get update && apt-get install -y nodejs npm
 
-# Atualize pacotes e instale o FFmpeg
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    apt-get clean
-
-# Defina o diretório de trabalho
+# Copie o servidor e instale dependências
+COPY server.js /app/
 WORKDIR /app
+RUN npm init -y && npm install express
 
-# Comando padrão para testar o FFmpeg
-CMD ["ffmpeg", "-version"]
+# Inicie o servidor
+CMD ["node", "server.js"]
