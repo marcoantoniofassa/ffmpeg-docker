@@ -1,6 +1,9 @@
 # Use uma imagem base do Ubuntu para FFmpeg e Node.js
 FROM ubuntu:20.04
 
+# Configura o frontend para evitar prompts interativos
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Atualize pacotes e instale dependências necessárias
 RUN apt-get update && apt-get install -y \
     ffmpeg \
