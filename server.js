@@ -1,24 +1,30 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const { exec } = require("child_process");
-const app = express();
-
-// Aumenta o limite do corpo para 200 MB
-app.use(bodyParser.json({ limit: "200mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "2000mb" }));
+const fs = require("fs");
 
 app.post("/process", (req, res) => {
     const { inputVideo } = req.body;
 
-    // Simula um processamento apenas como exemplo
-    exec(`ffmpeg -i ${inputVideo} -map 0:s:0 output.srt`, (err, stdout, stderr) => {
+    if (!inputVideo) {
+        return res.status(400).send("URL do vídeo é obrigatória.");
+    }
+
+    console.log("Processando vídeo:", inputVideo);
+
+    const outputFile = "/tmp/output.srt";
+    const command = `ffmpeg -i "${inputVideo}" -map 0:s:0 ${outputFile}`;
+
+    exec(command, (err, stdout, stderr) => {
         if (err) {
-            res.status(500).send(`Erro: ${stderr}`);
-        } else {
-            res.send("Legenda extraída com sucesso!");
+            console.error("Erro ao processar FFmpeg:", stderr);
+            return res.status(500).send(`Erro no processamento: ${stderr}`);
         }
+
+        // Lê o arquivo de legendas e retorna como resposta
+        fs.readFile(outputFile, "utf8", (err, data) => {
+            if (err) {
+                console.error("Erro ao ler o arquivo:", err);
+                return res.status(500).send("Erro ao ler o arquivo de legendas.");
+            }
+            res.send({ message: "Legenda extraída com sucesso!", subtitles: data });
+        });
     });
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
