@@ -28,21 +28,30 @@ app.post('/process', async (req, res) => {
                 return res.status(500).send("Erro ao baixar o vídeo.");
             }
 
-            // Processa o vídeo com FFmpeg
-            exec(`ffmpeg -i ${videoPath} -map 0:s:0 ${subtitlePath}`, (err) => {
+            // Processa o vídeo com FFmpeg (note o "?")
+            exec(`ffmpeg -i ${videoPath} -map 0:s:0? ${subtitlePath}`, (err) => {
                 if (err) {
-                    console.error('Erro ao processar FFmpeg:', err);
-                    return res.status(500).send("Erro ao processar o vídeo.");
+                    console.error('Aviso: nenhuma legenda encontrada ou erro no FFmpeg:', err);
+                    // Aqui, só registramos o erro, sem retornar pois pode não haver legendas
                 }
 
-                // Lê o arquivo de legendas e envia como resposta
+                // Lê o arquivo de legendas (se existir)
                 fs.readFile(subtitlePath, 'utf8', (err, data) => {
-                    if (err) {
-                        console.error('Erro ao ler o arquivo de legendas:', err);
-                        return res.status(500).send("Erro ao ler as legendas.");
+                    // Se der erro de leitura ou o arquivo estiver vazio, retorna sem legenda
+                    if (err || !data.trim()) {
+                        console.log('Nenhuma legenda foi encontrada.');
+
+                        // Limpa os arquivos temporários
+                        fs.unlink(videoPath, () => console.log('Arquivo de vídeo removido.'));
+                        fs.unlink(subtitlePath, () => console.log('Arquivo de legendas removido.'));
+
+                        return res.json({
+                            message: 'Nenhuma legenda encontrada.',
+                            subtitles: ''
+                        });
                     }
 
-                    // Limpa os arquivos temporários
+                    // Caso haja legendas
                     fs.unlink(videoPath, () => console.log('Arquivo de vídeo removido.'));
                     fs.unlink(subtitlePath, () => console.log('Arquivo de legendas removido.'));
 
@@ -55,7 +64,7 @@ app.post('/process', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro no servidor:', error);
-        res.status(500).send("Erro interno do servidor.");
+        return res.status(500).send("Erro interno do servidor.");
     }
 });
 
